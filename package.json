@@ -1,0 +1,39 @@
+{
+  "name": "ai-readiness-check",
+  "version": "0.0.1",
+  "description": "Check how ready a website is for AI crawlers, AI search, and AI agents: robots.txt, llms.txt, schema.org JSON-LD, Markdown pages, MCP discovery, and more. CLI, CI, and MCP.",
+  "type": "module",
+  "bin": {
+    "ai-readiness-check": "bin/cli.js"
+  },
+  "files": [
+    "bin/"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "ai",
+    "ai-readiness",
+    "llms-txt",
+    "robots-txt",
+    "ai-crawlers",
+    "ai-agents",
+    "mcp",
+    "schema-org",
+    "json-ld",
+    "seo",
+    "ci",
+    "lighthouse"
+  ],
+  "homepage": "https://www.tristandenyer.com/ai-readiness-check",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tristandenyer/ai-readiness-check.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tristandenyer/ai-readiness-check/issues"
+  },
+  "author": "Tristan Denyer <tristan@tristandenyer.com> (https://www.tristandenyer.com)",
+  "license": "MIT"
+}
