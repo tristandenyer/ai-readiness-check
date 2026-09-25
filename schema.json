@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://unpkg.com/ai-readiness-check/schema.json",
+  "title": "ai-readiness-check settings",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "target": {
+      "description": "URL to check when none is given on the command line, e.g. http://localhost:3000",
+      "type": "string"
+    },
+    "pages": {
+      "description": "Paths to check on the target site. Default: [\"/\"]",
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "pattern": "^/" }
+    },
+    "rules": {
+      "description": "Per check: \"off\" skips it and leaves it out of the score, \"warn\" reports a failure without failing the run, \"error\" (the default) fails the run.",
+      "type": "object",
+      "propertyNames": {
+        "enum": [
+          "robots-txt", "llms-txt", "llms-full-txt", "ai-txt", "tdmrep", "agent-card", "mcp-json",
+          "api-agent-yaml", "content-signals", "api-catalog", "sitemap", "schema-jsonld", "ai-meta-tags",
+          "markdown-link", "ai-hint-div", "x-robots-tag", "content-negotiation", "md-route", "link-header"
+        ]
+      },
+      "additionalProperties": { "enum": ["off", "warn", "error"] }
+    },
+    "failOn": {
+      "description": "\"fail\" (default): only failing checks fail the run. \"warn\": warnings fail it too.",
+      "enum": ["fail", "warn"]
+    },
+    "minScore": {
+      "description": "The lowest passing score, 0-100. A page that scores less fails the run; a page that scores exactly this passes. 100 allows only a perfect score.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "ratchet": {
+      "description": "Keep a score floor in ai-readiness.baseline.json that only goes up. A run fails if the score drops below it or a check gets worse.",
+      "oneOf": [
+        { "type": "boolean" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tolerance": {
+              "description": "Points the score may drop below the floor before the run fails. Default: 0",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "name": {
+              "description": "Name of this floor in the baseline file, so staging and production can keep separate floors. Default: \"default\"",
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    }
+  }
+}
