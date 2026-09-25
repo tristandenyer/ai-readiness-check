@@ -28,7 +28,7 @@ jobs:
         continue-on-error: true
         with:
           url: ${{ inputs.url }}
-          pages: /,/work
+          pages: /,/ai-readiness-check
           headers: "x-smoke-test: 1"
           upload-sarif: "true"
 
