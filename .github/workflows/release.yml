@@ -31,4 +31,7 @@ jobs:
         run: gh api "repos/tristandenyer/awesome-ai-website-files/git/ref/tags/$GITHUB_REF_NAME" --silent
       - run: node scripts/check-package.mjs
       - run: npm test
-      - run: npm publish --provenance
+      # Staged, not published: the version goes public only after it is
+      # approved with 2FA on npmjs.com. The npm that ships with Node may not
+      # have "stage" yet, so a version that does is pinned.
+      - run: npx --yes npm@12.1.0 stage publish --provenance
