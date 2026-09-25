@@ -384,11 +384,13 @@ function isDeniedHost(url, denylist) {
    - timeoutMs, userAgent: override the per-request defaults for this run.
    - headers: extra request headers, e.g. a preview deployment's bypass
      secret. Sent only to the checked URL's own origin, never to another
-     site a redirect or a link leads to. */
+     site a redirect or a link leads to.
+   - fetchCache: a Map shared by runs on pages of the same site, so
+     robots.txt, llms.txt, and the other site-wide files are fetched once. */
 export const PRIVATE_ADDRESS_ERROR = "It is a private network address";
 
 export async function runCheck(rawUrl, options = {}) {
-  const { denylist = [], allowPrivateNetwork = false, timeoutMs, userAgent, headers } =
+  const { denylist = [], allowPrivateNetwork = false, timeoutMs, userAgent, headers, fetchCache } =
     options;
   if (typeof rawUrl !== "string") {
     return { ok: false, status: 400, body: { error: "Invalid URL" } };
@@ -413,7 +415,7 @@ export async function runCheck(rawUrl, options = {}) {
     };
   }
   const headersOrigin = new URL(requestedUrl).origin;
-  return withRunOptions({ allowPrivateNetwork, timeoutMs, userAgent, headers, headersOrigin }, () =>
+  return withRunOptions({ allowPrivateNetwork, timeoutMs, userAgent, headers, headersOrigin, fetchCache }, () =>
     runPipeline(requestedUrl),
   );
 }

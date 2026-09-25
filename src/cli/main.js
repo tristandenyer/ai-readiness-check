@@ -5,8 +5,10 @@
 import fs from "node:fs";
 import { parseArgs } from "node:util";
 import { runCheck, PRIVATE_ADDRESS_ERROR } from "../core/run-check.js";
+import { withRunOptions } from "../core/run-options.js";
+import { sitemapPaths } from "../core/sitemap.js";
 import * as formats from "./formats.js";
-import { loadConfig, applyRules, evaluate, ConfigError, CONFIG_FILE } from "./config.js";
+import { loadConfig, applyRules, evaluate, pagesProblem, ConfigError, CONFIG_FILE, SITEMAP_ENTRY } from "./config.js";
 import { BASELINE_FILE, compareToBaseline, updateBaseline } from "./baseline.js";
 
 const FORMATS = {
@@ -39,6 +41,7 @@ Options:
   -f, --format <name>  ${Object.keys(FORMATS).join(", ")}
                        (default: pretty in a terminal, json otherwise)
   --pages <paths>      comma-separated paths to check, e.g. /,/blog
+                       "sitemap:5" adds 5 sitemap pages, a different 5 each run
   --config <file>      settings file (default: ${CONFIG_FILE}, then
                        the "aiReadiness" key in package.json)
   --allow-private      allow private network addresses such as 10.x and 192.168.x
@@ -164,11 +167,12 @@ export async function main(argv, io = process) {
   const format = values.format ?? (io.stdout.isTTY ? "pretty" : "json");
   if (!FORMATS[format]) return usageError(`Unknown format "${format}". Use one of: ${Object.keys(FORMATS).join(", ")}.`);
   const pages = values.pages ? values.pages.split(",").map((p) => p.trim()) : config.pages;
-  if (!pages.every((p) => p.startsWith("/"))) return usageError('--pages must be paths that start with "/", like /,/blog');
+  if (pagesProblem(pages)) return usageError(`--pages ${pagesProblem(pages)}`);
 
   const run = await checkPages(target, pages, { ...runOptions, rules: config.rules });
   if (run.error) return usageError(run.error);
   const { reports } = run;
+  for (const note of run.notes) err(note);
 
   const context = { version: version(), rerunCommand: agentRerunCommand(argv) };
   if (format === "sarif") out(formats.formatSarif(reports, context));
@@ -193,21 +197,57 @@ export async function main(argv, io = process) {
   return result.code;
 }
 
+/* Which of `paths` to check on run number `run`: n in a row, starting
+   where the previous run stopped, so every path is checked once every
+   ceil(paths / n) runs. */
+export function rotation(paths, n, run) {
+  if (paths.length <= n) return paths;
+  const start = (run * n) % paths.length;
+  return Array.from({ length: n }, (_, i) => paths[(start + i) % paths.length]);
+}
+
+/* GitHub Actions numbers each run of a workflow. Elsewhere, the day, so
+   runs on the same day check the same pages. */
+const runNumber = () => {
+  const n = Number.parseInt(process.env.GITHUB_RUN_NUMBER ?? "", 10);
+  return Number.isInteger(n) && n >= 0 ? n : Math.floor(Date.now() / 86_400_000);
+};
+const samePath = (a, b) => a.replace(/(.)\/$/, "$1") === b.replace(/(.)\/$/, "$1");
+
 /* Runs the check on each page of `target` and applies the rules.
-   Returns { reports }, or { error } when a page couldn't be checked at all.
+   Returns { reports, notes }, or { error } when a page couldn't be checked
+   at all. Pages picked with "sitemap:N" are marked `sampled`: the ratchet
+   leaves them out, since a different set is checked each run.
    Shared by the CLI commands and the MCP server. */
-export async function checkPages(target, pages, { rules = {}, allowPrivate = false, timeoutMs, headers } = {}) {
+export async function checkPages(target, pages, { rules = {}, allowPrivate = false, timeoutMs, headers, run = runNumber() } = {}) {
   const { url, isLoopback } = prepareUrl(target);
+  const sample = pages.map((p) => p.match(SITEMAP_ENTRY)).find(Boolean);
+  const paths = pages.filter((p) => !SITEMAP_ENTRY.test(p));
+  let origin;
   let urls;
   try {
+    origin = new URL(url).origin;
     // With only "/", check the URL as given (it may already include a path).
-    urls = pages.length === 1 && pages[0] === "/" ? [url] : pages.map((p) => new URL(p, url).href);
+    urls = paths.length === 1 && paths[0] === "/" && !sample ? [url] : paths.map((p) => new URL(p, url).href);
   } catch {
     return { error: `"${target}" is not a valid URL.` };
   }
-  const options = { allowPrivateNetwork: isLoopback || allowPrivate, timeoutMs, headers };
+  const options = { allowPrivateNetwork: isLoopback || allowPrivate, timeoutMs, headers, fetchCache: new Map() };
+  const notes = [];
+  let sampled = [];
+  if (sample) {
+    const n = Number(sample[1]);
+    const all = await withRunOptions({ ...options, headersOrigin: origin }, () => sitemapPaths(origin)).catch(() => null);
+    const others = all?.filter((p) => !paths.some((q) => samePath(p, q))) ?? [];
+    sampled = rotation(others, n, run);
+    if (!all) notes.push(`${sample[0]}: no sitemap found, so no sitemap pages were checked.`);
+    else if (!others.length) notes.push(`${sample[0]}: every page in the sitemap is already in "pages".`);
+    else if (others.length <= n) notes.push(`${sample[0]}: checked all ${others.length} other sitemap pages.`);
+    else notes.push(`${sample[0]}: checked ${sampled.join(", ")} (run ${run}). Every sitemap page is checked once every ${Math.ceil(others.length / n)} runs.`);
+    urls.push(...sampled.map((p) => new URL(p, origin).href));
+  }
   const reports = [];
-  for (const pageUrl of urls) {
+  for (const [i, pageUrl] of urls.entries()) {
     let result;
     try {
       result = await runCheck(pageUrl, options);
@@ -218,9 +258,10 @@ export async function checkPages(target, pages, { rules = {}, allowPrivate = fal
       const hint = result.body?.error === PRIVATE_ADDRESS_ERROR ? " Add --allow-private to check it." : "";
       return { error: `Could not check ${pageUrl}: ${result.body?.error}.${hint}` };
     }
-    reports.push(applyRules(result.body, rules));
+    const report = applyRules(result.body, rules);
+    reports.push(i < urls.length - sampled.length ? report : { ...report, sampled: true });
   }
-  return { reports };
+  return { reports, notes };
 }
 
 /* `baseline` saves the floor. `check` with the ratchet on compares with

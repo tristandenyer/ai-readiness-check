@@ -99,6 +99,22 @@ export async function sitemapPageUrls(baseUrl) {
   return null;
 }
 
+/* The sitemap's pages as sorted, unique paths, or null if the site has no
+   sitemap. Only the path is kept, so a dev server whose sitemap lists
+   production URLs gets its own pages checked. */
+export async function sitemapPaths(baseUrl) {
+  const urls = await sitemapPageUrls(baseUrl);
+  if (!urls) return null;
+  const paths = new Set();
+  for (const url of urls) {
+    try {
+      const u = new URL(url);
+      if (/^https?:$/.test(u.protocol)) paths.add(u.pathname + u.search);
+    } catch {}
+  }
+  return [...paths].sort();
+}
+
 export async function checkSitemap(baseUrl) {
   const start = performance.now();
   const id = "sitemap";

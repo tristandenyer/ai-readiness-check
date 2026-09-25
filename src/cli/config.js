@@ -10,6 +10,20 @@ const RULE_VALUES = ["off", "warn", "error"];
 
 export class ConfigError extends Error {}
 
+/* A "pages" entry is a path, or "sitemap:N": N pages from the site's
+   sitemap, a different N on each run. */
+export const SITEMAP_ENTRY = /^sitemap:([1-9]\d*)$/;
+
+/* What is wrong with a pages list, or null. */
+export function pagesProblem(pages) {
+  const ok =
+    Array.isArray(pages) &&
+    pages.length > 0 &&
+    pages.every((p) => typeof p === "string" && (p.startsWith("/") || SITEMAP_ENTRY.test(p))) &&
+    pages.filter((p) => SITEMAP_ENTRY.test(p)).length <= 1;
+  return ok ? null : 'must be paths that start with "/", plus at most one "sitemap:N", like ["/", "/blog", "sitemap:5"].';
+}
+
 const readJson = (file) => {
   try {
     return JSON.parse(fs.readFileSync(file, "utf8"));
@@ -52,9 +66,7 @@ function validate(raw, source) {
   const { target, pages = ["/"], rules = {}, failOn = "fail", minScore, ratchet: rawRatchet = false } = raw;
 
   if (target !== undefined && typeof target !== "string") problem('"target" must be a URL string.');
-  if (!Array.isArray(pages) || pages.length === 0 || !pages.every((p) => typeof p === "string" && p.startsWith("/"))) {
-    problem('"pages" must be a list of paths that start with "/", like ["/", "/blog"].');
-  }
+  if (pagesProblem(pages)) problem(`"pages" ${pagesProblem(pages)}`);
   if (typeof rules !== "object" || rules === null || Array.isArray(rules)) problem('"rules" must be an object.');
   for (const [id, value] of Object.entries(rules)) {
     if (!CHECK_IDS.includes(id)) problem(`unknown check "${id}" in "rules". Valid checks: ${CHECK_IDS.join(", ")}.`);

@@ -29,8 +29,10 @@ export function withRunOptions(options, fn) {
       headersOrigin: options?.headersOrigin,
       // URL -> network error code, for URLs that could not be fetched.
       networkErrors: new Map(),
-      // GET responses already fetched in this run, keyed by URL and request headers (see fetch.js).
-      fetchCache: new Map(),
+      // GET responses already fetched in this run, keyed by URL and request
+      // headers (see fetch.js). Checking several pages of one site passes
+      // one cache, so site-wide files are fetched once.
+      fetchCache: options?.fetchCache ?? new Map(),
     },
     fn,
   );

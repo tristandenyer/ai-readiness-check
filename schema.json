@@ -11,10 +11,10 @@
       "type": "string"
     },
     "pages": {
-      "description": "Paths to check on the target site. Default: [\"/\"]",
+      "description": "Paths to check on the target site, plus at most one \"sitemap:N\" for N pages from the sitemap, a different N each run. Default: [\"/\"]",
       "type": "array",
       "minItems": 1,
-      "items": { "type": "string", "pattern": "^/" }
+      "items": { "type": "string", "pattern": "^(/|sitemap:[1-9][0-9]*$)" }
     },
     "rules": {
       "description": "Per check: \"off\" skips it and leaves it out of the score, \"warn\" reports a failure without failing the run, \"error\" (the default) fails the run.",

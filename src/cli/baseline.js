@@ -1,5 +1,7 @@
 /* The ratchet: ai-readiness.baseline.json records each page's score and
-   check results, and later runs may not fall below them. */
+   check results, and later runs may not fall below them. Pages picked with
+   "sitemap:N" (marked `sampled`) are left out: each run checks different
+   ones, so they have no floor. */
 import fs from "node:fs";
 import { calculateGrade } from "../core/grade.js";
 import { applyRules } from "./config.js";
@@ -41,7 +43,7 @@ export function updateBaseline(reports, { targetName, version, allowLower }) {
   const pages = {};
   const lower = [];
   for (const report of reports) {
-    if (noResultsReason(report)) continue;
+    if (report.sampled || noResultsReason(report)) continue;
     const path = pagePath(report);
     const checks = {};
     for (const r of report.results) {
@@ -69,7 +71,7 @@ export function compareToBaseline(reports, { targetName, tolerance, rules, versi
   const scoringChanged = major(baseline.packageVersion) !== major(version);
 
   for (const report of reports) {
-    if (noResultsReason(report)) continue;
+    if (report.sampled || noResultsReason(report)) continue;
     const path = pagePath(report);
     const prev = entry.pages?.[path];
     if (!prev) {

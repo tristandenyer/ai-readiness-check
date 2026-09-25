@@ -129,7 +129,7 @@ npx ai-readiness-check baseline --allow-lower
 | Option                     | For                  | What it does                                                                                                                        |
 | -------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `-f, --format <name>`      | check, baseline      | `pretty`, `json`, `markdown`, `sarif`, or `agent`. Default: `pretty` in a terminal, `json` otherwise                                |
-| `--pages <paths>`          | check, baseline      | Comma-separated paths to check, e.g. `/,/blog,/pricing`. Overrides `pages` in the settings                                          |
+| `--pages <paths>`          | check, baseline      | Comma-separated paths to check, e.g. `/,/blog,/pricing` or `/,sitemap:5`. Overrides `pages` in the settings                         |
 | `--config <file>`          | all                  | Settings file to use instead of `ai-readiness.config.json`                                                                          |
 | `--timeout <ms>`           | check, baseline, mcp | Timeout for each request, 100 or more. Default: 10000 for most files, 5000 for the page-level checks                                |
 | `--header "<Name: value>"` | check, baseline, mcp | Extra request header, e.g. a preview deployment's bypass secret. Repeatable. Sent only to the site being checked, and never printed |
@@ -183,7 +183,7 @@ Put settings in `ai-readiness.config.json`, or under an `aiReadiness` key in `pa
 {
   "$schema": "https://unpkg.com/ai-readiness-check/schema.json",
   "target": "http://localhost:3000",
-  "pages": ["/", "/blog"],
+  "pages": ["/", "/blog", "sitemap:5"],
   "rules": { "ai-txt": "off", "llms-full-txt": "warn" },
   "failOn": "fail",
   "minScore": 60,
@@ -191,18 +191,33 @@ Put settings in `ai-readiness.config.json`, or under an `aiReadiness` key in `pa
 }
 ```
 
-| Setting             | Default             | Meaning                                                                                                                                           |
-| ------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `target`            | none                | URL to check when none is given on the command line                                                                                               |
-| `pages`             | `["/"]`             | Paths to check on the target                                                                                                                      |
-| `rules`             | every check `error` | Per check id: `off` skips it and leaves it out of the score, `warn` reports a failure without failing the run, `error` fails the run              |
-| `failOn`            | `"fail"`            | `"warn"` makes warnings fail the run too                                                                                                          |
-| `minScore`          | none                | The lowest passing score, 0–100. A page that scores less fails the run; a page that scores exactly this passes. `100` allows only a perfect score |
-| `ratchet`           | `false`             | `true`, or an object with the two settings below                                                                                                  |
-| `ratchet.tolerance` | `0`                 | Points the score may drop below the floor before the run fails                                                                                    |
-| `ratchet.name`      | `"default"`         | Name of this floor in the baseline file, so staging and production can keep separate floors                                                       |
+| Setting             | Default                                                                  | Meaning                                                                                                                                           |
+| ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `target`            | none                                                                     | URL to check when none is given on the command line                                                                                               |
+| `pages`             | Paths to check on the target, plus at most one `"sitemap:N"` (see below) | Paths to check on the target                                                                                                                      |
+| `rules`             | every check `error`                                                      | Per check id: `off` skips it and leaves it out of the score, `warn` reports a failure without failing the run, `error` fails the run              |
+| `failOn`            | `"fail"`                                                                 | `"warn"` makes warnings fail the run too                                                                                                          |
+| `minScore`          | none                                                                     | The lowest passing score, 0–100. A page that scores less fails the run; a page that scores exactly this passes. `100` allows only a perfect score |
+| `ratchet`           | `false`                                                                  | `true`, or an object with the two settings below                                                                                                  |
+| `ratchet.tolerance` | `0`                                                                      | Points the score may drop below the floor before the run fails                                                                                    |
+| `ratchet.name`      | `"default"`                                                              | Name of this floor in the baseline file, so staging and production can keep separate floors                                                       |
 
 Unknown settings and unknown check ids are errors, so a typo can't silently turn a rule off.
+
+### Checking more of the site
+
+The paths in `pages` are checked on every run. Add `"sitemap:N"` to also check N pages from the site's sitemap, a different N each run:
+
+```json
+"pages": ["/", "/blog", "sitemap:5"]
+```
+
+- The pages rotate in order, so every sitemap page is checked once every few runs. On a site with 50 other pages, `sitemap:5` covers all of them in 10 runs.
+- In GitHub Actions the rotation follows the run number, so rerunning a failed run checks the same pages. Elsewhere it follows the date.
+- Only each sitemap URL's path is used, on the site being checked. A dev server whose sitemap lists production URLs gets its own pages checked.
+- The run lists the pages it picked. Pages already in `pages` are skipped.
+- The ratchet leaves these pages out, since each run checks different ones. They still fail the run on a failing check or a score below `minScore`.
+- Site-wide files such as `robots.txt` and `llms.txt` are fetched once per run, so each extra page adds only its own requests.
 
 ## Ratchet: a score that only goes up
 
@@ -249,7 +264,7 @@ The results table goes to the job summary. With `upload-sarif: true`, each probl
 | Input             | Default                    | Meaning                                                                                                                                |
 | ----------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `url`             | `target` from the settings | URL to check                                                                                                                           |
-| `pages`           | `pages` from the settings  | Comma-separated paths, e.g. `/,/blog`                                                                                                  |
+| `pages`           | `pages` from the settings  | Comma-separated paths, e.g. `/,/blog` or `/,sitemap:5`                                                                                 |
 | `config`          | `ai-readiness.config.json` | Path to a settings file                                                                                                                |
 | `headers`         | none                       | Extra request headers, one per line. Sent only to the site being checked                                                               |
 | `upload-sarif`    | `false`                    | `true` sends problems to GitHub code scanning. Needs `security-events: write`, and `actions: read` in a private repo                   |
