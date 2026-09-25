@@ -6,7 +6,9 @@ Checks how ready a website is for AI crawlers, AI search, and AI agents, and tel
 
 Run it on your own machine, in CI, or from an AI coding agent. Requires Node.js 22 or newer.
 
-Zero dependencies. About 250 KB installed. In CI it adds about 3 seconds per run (measured on 2 pages), not counting GitHub's SARIF upload, if you choose to use that.
+- Zero dependencies.
+- About 250 KB installed.
+- In CI it adds about 3 seconds per run (measured on 2 pages), plus about 7 seconds if you upload SARIF.
 
 ## Why use it
 
