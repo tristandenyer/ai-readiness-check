@@ -1,6 +1,6 @@
 <img width="742" height="334" alt="Screenshot 2026-09-24 at 21 04 23" src="https://github.com/user-attachments/assets/a405a4b4-54cf-4855-bce7-bc54f5e3183c" />
 
-# AI Readiness Check
+# AI Readiness Check (the npm package)
 
 Checks how ready a website is for AI crawlers, AI search, and AI agents, and tells you how to fix what's missing. It runs 19 checks: `robots.txt` rules for AI crawlers, `llms.txt`, `schema.org JSON-LD`, markdown versions of pages, sitemaps, MCP discovery, and more.
 
