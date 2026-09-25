@@ -118,6 +118,7 @@ Options with two names, like `-f, --format`, take either one: `-f json`, `--form
 
 ```
 npx ai-readiness-check check example.com --pages /,/about,/blog
+npx ai-readiness-check check example.com --pages /,sitemap:5
 npx ai-readiness-check check --config ci/ai-readiness.json
 npx ai-readiness-check check example.com --timeout 20000
 npx ai-readiness-check check https://my-app-git-feature.vercel.app --header "x-vercel-protection-bypass: $VERCEL_AUTOMATION_BYPASS_SECRET"
@@ -191,20 +192,20 @@ Put settings in `ai-readiness.config.json`, or under an `aiReadiness` key in `pa
 }
 ```
 
-| Setting             | Default                                                                  | Meaning                                                                                                                                           |
-| ------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `target`            | none                                                                     | URL to check when none is given on the command line                                                                                               |
-| `pages`             | Paths to check on the target, plus at most one `"sitemap:N"` (see below) | Paths to check on the target                                                                                                                      |
-| `rules`             | every check `error`                                                      | Per check id: `off` skips it and leaves it out of the score, `warn` reports a failure without failing the run, `error` fails the run              |
-| `failOn`            | `"fail"`                                                                 | `"warn"` makes warnings fail the run too                                                                                                          |
-| `minScore`          | none                                                                     | The lowest passing score, 0–100. A page that scores less fails the run; a page that scores exactly this passes. `100` allows only a perfect score |
-| `ratchet`           | `false`                                                                  | `true`, or an object with the two settings below                                                                                                  |
-| `ratchet.tolerance` | `0`                                                                      | Points the score may drop below the floor before the run fails                                                                                    |
-| `ratchet.name`      | `"default"`                                                              | Name of this floor in the baseline file, so staging and production can keep separate floors                                                       |
+| Setting             | Default             | Meaning                                                                                                                                                                             |
+| ------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `target`            | none                | URL to check when none is given on the command line                                                                                                                                 |
+| `pages`             | `["/"]`             | Paths to check on the target, plus at most one `"sitemap:N"` to check N sitemap pages per run (see [Check rotating pages from the sitemap](#check-rotating-pages-from-the-sitemap)) |
+| `rules`             | every check `error` | Per check id: `off` skips it and leaves it out of the score, `warn` reports a failure without failing the run, `error` fails the run                                                |
+| `failOn`            | `"fail"`            | `"warn"` makes warnings fail the run too                                                                                                                                            |
+| `minScore`          | none                | The lowest passing score, 0–100. A page that scores less fails the run; a page that scores exactly this passes. `100` allows only a perfect score                                   |
+| `ratchet`           | `false`             | `true`, or an object with the two settings below                                                                                                                                    |
+| `ratchet.tolerance` | `0`                 | Points the score may drop below the floor before the run fails                                                                                                                      |
+| `ratchet.name`      | `"default"`         | Name of this floor in the baseline file, so staging and production can keep separate floors                                                                                         |
 
 Unknown settings and unknown check ids are errors, so a typo can't silently turn a rule off.
 
-### Checking more of the site
+### Check rotating pages from the sitemap
 
 The paths in `pages` are checked on every run. Add `"sitemap:N"` to also check N pages from the site's sitemap, a different N each run:
 
