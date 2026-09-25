@@ -4,7 +4,9 @@
 
 Checks how ready a website is for AI crawlers, AI search, and AI agents, and tells you how to fix what's missing. It runs 19 checks: `robots.txt` rules for AI crawlers, `llms.txt`, `schema.org JSON-LD`, markdown versions of pages, sitemaps, MCP discovery, and more.
 
-Run it on your own machine, in CI, or from an AI coding agent. No dependencies. Requires Node.js 22 or newer.
+Run it on your own machine, in CI, or from an AI coding agent. Requires Node.js 22 or newer.
+
+Zero dependencies. About 250 KB installed. In CI it adds about 3 seconds per run (measured on 2 pages), not counting GitHub's SARIF upload, if you choose to use that.
 
 ## Why use it
 
