@@ -1,0 +1,94 @@
+name: AI Readiness Check
+description: Checks how ready a website is for AI crawlers, AI search, and AI agents, with links to how to fix each problem.
+author: Tristan Denyer
+branding:
+  icon: check-circle
+  color: blue
+
+inputs:
+  url:
+    description: URL to check. Leave empty to use "target" from ai-readiness.config.json.
+    required: false
+    default: ""
+  pages:
+    description: Comma-separated paths to check, e.g. /,/blog
+    required: false
+    default: ""
+  config:
+    description: Path to a settings file. Default ai-readiness.config.json, then "aiReadiness" in package.json.
+    required: false
+    default: ""
+  headers:
+    description: 'Extra request headers, one per line, e.g. "x-vercel-protection-bypass: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}". Sent only to the site being checked.'
+    required: false
+    default: ""
+  upload-sarif:
+    description: 'Upload problems to GitHub code scanning. Needs "security-events: write".'
+    required: false
+    default: "false"
+  commit-baseline:
+    description: 'When the score rises, save the new floor to ai-readiness.baseline.json and push it. Needs "contents: write". Use only on pushes to your main branch.'
+    required: false
+    default: "false"
+
+outputs:
+  exit-code:
+    description: 0 passed, 1 checks failed, 2 the check could not run.
+    value: ${{ steps.check.outputs.exit-code }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: 24
+
+    # Runs the copy of the CLI that ships with this action, so the action
+    # and CLI versions always match and nothing is downloaded from npm.
+    - id: check
+      shell: bash
+      env:
+        CLI: ${{ github.action_path }}/bin/cli.js
+        URL: ${{ inputs.url }}
+        PAGES: ${{ inputs.pages }}
+        CONFIG: ${{ inputs.config }}
+        HEADERS: ${{ inputs.headers }}
+        COMMIT_BASELINE: ${{ inputs.commit-baseline }}
+      run: |
+        args=()
+        [ -n "$URL" ] && args+=("$URL")
+        while IFS= read -r line; do
+          [ -n "$line" ] && args+=(--header "$line")
+        done <<< "$HEADERS"
+        [ -n "$PAGES" ] && args+=(--pages "$PAGES")
+        [ -n "$CONFIG" ] && args+=(--config "$CONFIG")
+        set +e
+        node "$CLI" check "${args[@]}" --format markdown --sarif "$RUNNER_TEMP/ai-readiness.sarif" >> "$GITHUB_STEP_SUMMARY"
+        code=$?
+        set -e
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+
+        # Save and push a higher floor. Only after a passing run.
+        if [ "$COMMIT_BASELINE" = "true" ] && [ "$code" = "0" ]; then
+          node "$CLI" baseline "${args[@]}" --format json > /dev/null
+          if git diff --quiet -- ai-readiness.baseline.json && git ls-files --error-unmatch ai-readiness.baseline.json >/dev/null 2>&1; then
+            echo "The floor did not change."
+          else
+            git add ai-readiness.baseline.json
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -m "chore: raise the AI readiness floor"
+            git push
+          fi
+        fi
+
+    - if: ${{ always() && inputs.upload-sarif == 'true' && steps.check.outputs.exit-code != '2' }}
+      uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+      with:
+        sarif_file: ${{ runner.temp }}/ai-readiness.sarif
+        category: ai-readiness
+
+    - if: ${{ steps.check.outputs.exit-code != '0' }}
+      shell: bash
+      run: |
+        echo "::error::AI readiness check exited with code ${{ steps.check.outputs.exit-code }}. See the job summary for what to fix."
+        exit 1

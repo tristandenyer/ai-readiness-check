@@ -1,0 +1,34 @@
+# Publishes to npm when a GitHub release is published, using npm trusted
+# publishing: npm verifies this workflow through GitHub's OIDC token, so no
+# npm token is stored anywhere. Configure the trusted publisher on
+# npmjs.com (package settings) with this repo and "release.yml".
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - name: Release tag must match package.json version
+        run: test "v$(node -p 'require("./package.json").version')" = "$GITHUB_REF_NAME"
+      - name: awesome-ai-website-files must have the same tag, since the fix links point at it
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api "repos/tristandenyer/awesome-ai-website-files/git/ref/tags/$GITHUB_REF_NAME" --silent
+      - run: node scripts/check-package.mjs
+      - run: npm test
+      - run: npm publish --provenance
