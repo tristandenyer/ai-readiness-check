@@ -23,7 +23,7 @@ inputs:
     required: false
     default: ""
   upload-sarif:
-    description: 'Upload problems to GitHub code scanning. Needs "security-events: write".'
+    description: 'Upload problems to GitHub code scanning. Needs "security-events: write", and "actions: read" in a private repo.'
     required: false
     default: "false"
   commit-baseline:

@@ -231,6 +231,7 @@ jobs:
     permissions:
       contents: read
       security-events: write # only for upload-sarif
+      actions: read # only for upload-sarif in a private repo
     steps:
       - uses: actions/checkout@v7
       - uses: tristandenyer/ai-readiness-check@v0.1.0
@@ -239,7 +240,7 @@ jobs:
           upload-sarif: true
 ```
 
-The results table goes to the job summary. With `upload-sarif: true`, each problem also shows up in the repository's Security tab, with a link to how to fix it. The action runs the copy of the tool that ships inside it, so it downloads nothing from npm.
+The results table goes to the job summary. With `upload-sarif: true`, each problem also shows up in the repository's Security tab, with a link to how to fix it. Code scanning is free for public repositories; a private repository needs GitHub Advanced Security. The action runs the copy of the tool that ships inside it, so it downloads nothing from npm.
 
 | Input             | Default                    | Meaning                                                                                                                                |
 | ----------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
@@ -247,7 +248,7 @@ The results table goes to the job summary. With `upload-sarif: true`, each probl
 | `pages`           | `pages` from the settings  | Comma-separated paths, e.g. `/,/blog`                                                                                                  |
 | `config`          | `ai-readiness.config.json` | Path to a settings file                                                                                                                |
 | `headers`         | none                       | Extra request headers, one per line. Sent only to the site being checked                                                               |
-| `upload-sarif`    | `false`                    | `true` sends problems to GitHub code scanning. Needs `security-events: write`                                                          |
+| `upload-sarif`    | `false`                    | `true` sends problems to GitHub code scanning. Needs `security-events: write`, and `actions: read` in a private repo                   |
 | `commit-baseline` | `false`                    | `true` saves and pushes a higher ratchet floor after a passing run. Needs `contents: write`. Use it only on pushes to your main branch |
 
 | Output      | Meaning                                                                                       |
