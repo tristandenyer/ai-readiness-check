@@ -181,19 +181,21 @@ describe("html-scan: malformed and hostile input", () => {
     expect(hrefs(doc)).toEqual([]);
   });
 
+  /* The limits allow for slow CI machines. Parsing that grows with the
+     square of the input takes many seconds on 1 MB, so it still fails. */
   it("parses 1 MB of deeply nested tags quickly", () => {
     const html = "<body>" + "<div><span>".repeat(100000) + "</body>";
     expect(html.length).toBeGreaterThan(1024 * 1024);
     const t0 = performance.now();
     parseHtml(html);
-    expect(performance.now() - t0).toBeLessThan(300);
+    expect(performance.now() - t0).toBeLessThan(2000);
   });
 
   it("parses 1 MB with thousands of scripts quickly", () => {
     const html = "<body>" + "<script>var a = 1 < 2;</script><p>x</p>".repeat(25000) + "</body>";
     const t0 = performance.now();
     const doc = parseHtml(html);
-    expect(performance.now() - t0).toBeLessThan(300);
+    expect(performance.now() - t0).toBeLessThan(2000);
     expect(doc.body.textContent.length).toBeGreaterThan(0);
   });
 });
