@@ -253,7 +253,7 @@ jobs:
       actions: read # only for upload-sarif in a private repo
     steps:
       - uses: actions/checkout@v7
-      - uses: tristandenyer/ai-readiness-check@v0.1.0
+      - uses: tristandenyer/ai-readiness-check@v0.2.0
         with:
           url: https://www.example.com
           upload-sarif: true
@@ -289,7 +289,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - uses: tristandenyer/ai-readiness-check@v0.1.0
+      - uses: tristandenyer/ai-readiness-check@v0.2.0
         with:
           url: ${{ github.event.deployment_status.target_url }}
 ```

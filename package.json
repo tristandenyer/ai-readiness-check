@@ -1,6 +1,6 @@
 {
   "name": "ai-readiness-check",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Check how ready a website is for AI crawlers, AI search, and AI agents: robots.txt, llms.txt, schema.org JSON-LD, Markdown pages, MCP discovery, and more. CLI, CI, and MCP.",
   "type": "module",
   "exports": {
