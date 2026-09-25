@@ -8,11 +8,11 @@
    second, no marketing. */
 export const FIX_SUMMARIES = {
   "robots-txt":
-    "Add a robots.txt at the site root that explicitly allows the AI crawlers you want (GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, etc.).",
+    "Give robots.txt at the site root explicit rules for the AI crawlers you want (GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot, etc.).",
   "llms-txt":
-    "Add an llms.txt at the site root following the llmstxt.org spec: H1, blockquote summary, H2 sections of links with descriptions.",
+    "Create or complete llms.txt at the site root per llmstxt.org: H1, blockquote summary, H2 sections linking every important page.",
   "llms-full-txt":
-    "Add an llms-full.txt at the site root containing the full text of your most important pages, concatenated with clear section headers.",
+    "Create or complete llms-full.txt at the site root: the full text of each page llms.txt links, with a heading per page.",
   "ai-txt":
     "Add an ai.txt at the site root listing per-bot training/usage permissions in the spawning.ai format.",
   tdmrep:
@@ -32,7 +32,7 @@ export const FIX_SUMMARIES = {
   "schema-jsonld":
     "Embed schema.org JSON-LD on each page (Article, BreadcrumbList, FAQPage where relevant) so search and AI tools can parse structure.",
   "ai-meta-tags":
-    "Add AI-aware meta tags (og:image, twitter:image, plus llms-aware tags) on the page <head>.",
+    "To opt out of AI training, add a robots meta tag with noai or noimageai to the page <head>. Optional.",
   "markdown-link":
     "Expose a clean .md version of the page and link to it from <head> via a <link rel=\"alternate\" type=\"text/markdown\"> tag.",
   "ai-hint-div":
