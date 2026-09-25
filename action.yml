@@ -19,7 +19,7 @@ inputs:
     required: false
     default: ""
   headers:
-    description: 'Extra request headers, one per line, e.g. "x-vercel-protection-bypass: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}". Sent only to the site being checked.'
+    description: 'Extra request headers, one per line, e.g. a Vercel protection bypass header. Sent only to the site being checked.'
     required: false
     default: ""
   upload-sarif:

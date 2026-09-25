@@ -31,3 +31,13 @@ describe("README", () => {
     }
   });
 });
+
+describe("action.yml", () => {
+  /* GitHub evaluates ${{ }} everywhere in action.yml, descriptions
+     included, and refuses to load the action if one names "secrets". */
+  it("has no expressions in its descriptions", () => {
+    for (const [, text] of action.matchAll(/^\s*description:(.*)$/gm)) {
+      expect(text, text).not.toMatch(/\$\{\{/);
+    }
+  });
+});
