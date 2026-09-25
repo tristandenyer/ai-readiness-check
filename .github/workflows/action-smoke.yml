@@ -1,0 +1,44 @@
+name: Action smoke test
+
+# Runs this repo's action against a live site, to confirm the action
+# itself works: the job summary, the SARIF upload, and the exit-code output.
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: URL to check
+        default: https://www.tristandenyer.com
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The site may fail some checks. This test is about the action, so it
+      # keeps going and checks the output instead.
+      - id: check
+        uses: ./
+        continue-on-error: true
+        with:
+          url: ${{ inputs.url }}
+          pages: /,/work
+          headers: "x-smoke-test: 1"
+          upload-sarif: "true"
+
+      - shell: bash
+        env:
+          CODE: ${{ steps.check.outputs.exit-code }}
+        run: |
+          echo "exit-code: $CODE"
+          if [ "$CODE" != "0" ] && [ "$CODE" != "1" ]; then
+            echo "::error::Expected exit-code 0 or 1, got '$CODE'."
+            exit 1
+          fi
+          test -s "$RUNNER_TEMP/ai-readiness.sarif" || { echo "::error::No SARIF file was written."; exit 1; }
